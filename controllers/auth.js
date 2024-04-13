@@ -1,21 +1,12 @@
 const AppError = require('../utils/AppError')
+const { promisify } = require('util')
 const User = require('./../models/userModel')
 const jwt = require('jsonwebtoken')
+const catchAsync = require('./../utils/catchAsync')
 const token = id => {
     return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN })
 }
 
-exports.getAllUsers = async (req, res, next) => {
-    const newUser = await User.find()
-
-    res.status(200).json({
-        message: "success",
-        data: {
-            totalUsers: newUser.length,
-            user: newUser
-        }
-    })
-}
 
 exports.signUp = async (req, res, next) => {
     const newUser = await User.create({
@@ -51,3 +42,22 @@ exports.login = async (req, res, next) => {
         loginToken
     })
 }
+
+
+exports.protect = catchAsync(async (req, res, next) => {
+    let token
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        // console.log(token)
+        token = req.headers.authorization.split(' ')[1]
+        console.log(token)
+    }
+    if (!token) {
+        return next(new AppError('You are not logged in! Please log in to gain access', 401))
+    }
+
+    // const decoded = await jwt.verify(token, process.env_JWT_SECRET)
+    const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET)
+    console.log(decoded)
+})
+
+
